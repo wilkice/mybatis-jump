@@ -26,7 +26,7 @@
       "editor/context": [
         {
           "command": "mybatis-plus-jump.goToMybatisDefinition",
-          "when": "editorTextFocus",
+          "when": "resourceLangId == java && editorTextFocus",
           "group": "navigation@10"
         }
       ]
