@@ -4,7 +4,7 @@
   "description": "jump to mapper xml definition",
   "version": "0.0.1",
   "engines": {
-    "vscode": "^1.100.0"
+    "vscode": "^1.96.2"
   },
   "categories": [
     "Other"
