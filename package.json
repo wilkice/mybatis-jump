@@ -16,8 +16,21 @@
       {
         "command": "mybatis-plus-jump.helloWorld",
         "title": "Hello World"
+      },
+      {
+        "command": "mybatis-plus-jump.goToMybatisDefinition",
+        "title": "Go to MyBatis Definition"
       }
-    ]
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "mybatis-plus-jump.goToMybatisDefinition",
+          "when": "editorTextFocus",
+          "group": "navigation@10"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

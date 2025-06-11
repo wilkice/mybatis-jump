@@ -16,10 +16,17 @@ export function activate(context: vscode.ExtensionContext) {
 	const disposable = vscode.commands.registerCommand('mybatis-plus-jump.helloWorld', () => {
 		// The code you place here will be executed every time your command is executed
 		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from mybatis-plus-jump!');
+		vscode.window.showInformationMessage('Hello World');
 	});
 
 	context.subscriptions.push(disposable);
+
+	const goToMybatisDefinition = vscode.commands.registerCommand('mybatis-plus-jump.goToMybatisDefinition', async () => {
+		// Your logic to jump to MyBatis definition goes here
+		vscode.window.showInformationMessage('Go to MyBatis Definition triggered!');
+	  });
+	  
+	  context.subscriptions.push(goToMybatisDefinition);
 }
 
 // This method is called when your extension is deactivated
