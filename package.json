@@ -1,6 +1,11 @@
 {
-  "name": "mybatis-plus-jump",
-  "displayName": "mybatis-plus-jump",
+  "name": "mybatis-jump-mapper-xml",
+  "publisher": "yanjiabin",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wilkice/mybatis-jump"
+  },
+  "displayName": "mybatis jump to mapper xml",
   "description": "jump to mapper xml definition",
   "version": "0.0.1",
   "engines": {
@@ -14,18 +19,18 @@
   "contributes": {
     "commands": [
       {
-        "command": "mybatis-plus-jump.helloWorld",
+        "command": "mybatis-jump-mapper-xml.helloWorld",
         "title": "Hello World"
       },
       {
-        "command": "mybatis-plus-jump.goToMybatisDefinition",
+        "command": "mybatis-jump-mapper-xml.goToMybatisDefinition",
         "title": "Go to MyBatis Definition"
       }
     ],
     "menus": {
       "editor/context": [
         {
-          "command": "mybatis-plus-jump.goToMybatisDefinition",
+          "command": "mybatis-jump-mapper-xml.goToMybatisDefinition",
           "when": "resourceLangId == java && editorTextFocus",
           "group": "navigation@10"
         }
@@ -50,5 +55,6 @@
     "typescript": "^5.8.3",
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.5.2"
-  }
+  },
+  "license": "MIT"
 }
