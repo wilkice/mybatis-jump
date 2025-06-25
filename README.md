@@ -1,18 +1,23 @@
-# mybatis-jump-mapper-xml README
+# MyBatis Jump Mapper XML Extension
 
-This is a very simple extension to jump to MyBatis Mapper XML SQL definition.
+A simple VS Code extension that lets you quickly jump from a MyBatis Mapper method in Java to its corresponding SQL definition in the XML file.
 
-## How to use
-1. right click on mapper method
-2. select `Go to Mapper Definition`
-3. it takes you to the SQL definition in XML file
+## Features
+- Instantly navigate from a Mapper method to its SQL definition in the XML.
 
-See this gif
+## How to Use
+1. **Right-click** on a Mapper method in your Java file.
+2. Select **"Go to Mapper Definition"** from the context menu.
+3. You will be taken directly to the corresponding SQL statement in the XML file.
+
+See it in action:
 
 ![Demo](static/demo.gif)
 
-## Limit
-1. This extension assumes that the mapper java file and XML file has the same prefix. Such as `UserMapper.java` and `UserMapper.xml`. If you use different prefix, then it wont work
+## Limitations
+- The extension assumes that the Java Mapper file and the XML file share the same prefix. For example, `UserMapper.java` and `UserMapper.xml`.
+- If the file prefixes do not match, the extension will not work as expected.
 
+---
 
-**Enjoy!**
+**Enjoy using MyBatis Jump Mapper XML!**
