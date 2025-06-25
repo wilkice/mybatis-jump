@@ -7,7 +7,7 @@
   },
   "displayName": "mybatis jump to mapper xml",
   "description": "jump to mapper xml definition",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "engines": {
     "vscode": "^1.96.2"
   },
