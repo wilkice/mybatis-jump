@@ -19,18 +19,14 @@
   "contributes": {
     "commands": [
       {
-        "command": "mybatis-jump-mapper-xml.helloWorld",
-        "title": "Hello World"
-      },
-      {
-        "command": "mybatis-jump-mapper-xml.goToMybatisDefinition",
-        "title": "Go to MyBatis Definition"
+        "command": "mybatis-jump-mapper-xml.goMapperDefinition",
+        "title": "Go to Mapper Definition"
       }
     ],
     "menus": {
       "editor/context": [
         {
-          "command": "mybatis-jump-mapper-xml.goToMybatisDefinition",
+          "command": "mybatis-jump-mapper-xml.goMapperDefinition",
           "when": "resourceLangId == java && editorTextFocus",
           "group": "navigation@10"
         }
