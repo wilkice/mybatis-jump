@@ -36,6 +36,7 @@ export function activate(context: vscode.ExtensionContext) {
 		const methodMatch = lineText.match(methodRegex);
 		if (!methodMatch) {
 			// Not on a method line
+			vscode.window.showWarningMessage(`Not on a method line: ${lineText}`);
 			return;
 		}
 		const methodName = methodMatch[2];
