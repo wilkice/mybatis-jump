@@ -69,7 +69,17 @@ export function activate(context: vscode.ExtensionContext) {
 
 		// Open the XML file and reveal the line
 		const xmlEditor = await vscode.window.showTextDocument(xmlDoc, { preview: false });
-		const range = new vscode.Range(targetLine, 0, targetLine, 0);
+		const lineTextInXml = lines[targetLine];
+		const idMatch = lineTextInXml.match(/id=["']([^"']+)["']/);
+		let startChar = 0;
+		if (idMatch && idMatch.index !== undefined) {
+			// Find the start index of the method name (id property value)
+			const idValueIndex = lineTextInXml.indexOf(methodName);
+			if (idValueIndex !== -1) {
+				startChar = idValueIndex;
+			}
+		}
+		const range = new vscode.Range(targetLine, startChar, targetLine, startChar + methodName.length);
 		xmlEditor.selection = new vscode.Selection(range.start, range.end);
 		xmlEditor.revealRange(range, vscode.TextEditorRevealType.InCenter);
 	});
