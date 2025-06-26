@@ -9,7 +9,7 @@
   "description": "jump to mapper xml definition",
   "version": "0.0.6",
   "engines": {
-    "vscode": "^1.96.2"
+    "vscode": "^1.30.0"
   },
   "categories": [
     "Other"
@@ -42,7 +42,7 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.96.2",
+    "@types/vscode": "^1.30.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
     "@typescript-eslint/eslint-plugin": "^8.31.1",
