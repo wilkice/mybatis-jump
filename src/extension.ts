@@ -41,35 +41,74 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 		const methodName = methodMatch[2];
 
-		// Search for the XML file in the workspace
-		const xmlFiles = await vscode.workspace.findFiles(`**/${className}.xml`, '**/node_modules/**', 1);
+		// Search for all XML files with the same name in the workspace
+		const xmlFiles = await vscode.workspace.findFiles(`**/${className}.xml`, '**/node_modules/**');
 		if (!xmlFiles || xmlFiles.length === 0) {
 			vscode.window.showWarningMessage(`${className}.xml not found in workspace.`);
 			return;
 		}
 
-		const xmlUri = xmlFiles[0];
-		const xmlDoc = await vscode.workspace.openTextDocument(xmlUri);
-		const xmlText = xmlDoc.getText();
-		const lines = xmlText.split(/\r?\n/);
+		// Calculate path similarity for each XML file and sort by similarity
+		const javaFilePath = fileName;
+		const javaSegments = javaFilePath.split(/[\/\\]/);
 
-		// Search for id="<methodName>"
+		const filesWithSimilarity = xmlFiles.map(xmlUri => {
+			const xmlPath = xmlUri.fsPath;
+			const xmlSegments = xmlPath.split(/[\/\\]/);
+
+			// Count consecutive matching segments from the beginning
+			let similarity = 0;
+			const minLength = Math.min(javaSegments.length, xmlSegments.length);
+			for (let i = 0; i < minLength; i++) {
+				if (javaSegments[i] === xmlSegments[i]) {
+					similarity++;
+				} else {
+					break;
+				}
+			}
+
+			return { uri: xmlUri, similarity };
+		});
+
+		// Sort by similarity score (descending)
+		filesWithSimilarity.sort((a, b) => b.similarity - a.similarity);
+
+		// Search files sequentially until a match is found
 		const idPattern = new RegExp(`id=["']${methodName}["']`);
+		let foundFile: vscode.Uri | null = null;
 		let targetLine = -1;
-		for (let i = 0; i < lines.length; i++) {
-			if (idPattern.test(lines[i])) {
-				targetLine = i;
+		let xmlDoc: vscode.TextDocument | null = null;
+		let lines: string[] = [];
+
+		for (const fileInfo of filesWithSimilarity) {
+			const doc = await vscode.workspace.openTextDocument(fileInfo.uri);
+			const text = doc.getText();
+			const fileLines = text.split(/\r?\n/);
+
+			// Search for the method ID pattern
+			for (let i = 0; i < fileLines.length; i++) {
+				if (idPattern.test(fileLines[i])) {
+					foundFile = fileInfo.uri;
+					targetLine = i;
+					xmlDoc = doc;
+					lines = fileLines;
+					break;
+				}
+			}
+
+			// Early exit if match found
+			if (foundFile) {
 				break;
 			}
 		}
 
-		if (targetLine === -1) {
-			vscode.window.showWarningMessage(`No <id="${methodName}"> found in ${className}.xml.`);
+		if (!foundFile || targetLine === -1 || !xmlDoc) {
+			vscode.window.showWarningMessage(`No id="${methodName}" found in ${className}.xml (searched ${filesWithSimilarity.length} file(s))`);
 			return;
 		}
 
 		// Open the XML file and reveal the line
-		const xmlEditor = await vscode.window.showTextDocument(xmlDoc, { preview: false });
+		const xmlEditor = await vscode.window.showTextDocument(xmlDoc!, { preview: false });
 		const lineTextInXml = lines[targetLine];
 		const idMatch = lineTextInXml.match(/id=["']([^"']+)["']/);
 		let startChar = 0;
