@@ -119,7 +119,7 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 
 		if (!found || targetLine === -1 || !targetXmlUri || !targetXmlDoc || !xmlText) {
-			vscode.window.showWarningMessage(`No <id="${methodName}"> found in any ${className}.xml file.`);
+			vscode.window.showWarningMessage(`No id="${methodName}" found in any ${className}.xml file.`);
 			return;
 		}
 
