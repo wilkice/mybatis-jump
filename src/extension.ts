@@ -42,7 +42,7 @@ export function activate(context: vscode.ExtensionContext) {
 		const methodName = methodMatch[2];
 
 		// Search for the XML file in the workspace
-		const xmlFiles = await vscode.workspace.findFiles(`**/${className}.xml`, '**/node_modules/**', 1);
+		const xmlFiles = await vscode.workspace.findFiles(`**/${className}.xml`, null, 1);
 		if (!xmlFiles || xmlFiles.length === 0) {
 			vscode.window.showWarningMessage(`${className}.xml not found in workspace.`);
 			return;
