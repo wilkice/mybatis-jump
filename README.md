@@ -15,8 +15,7 @@ See it in action:
 ![Demo](static/demo.gif)
 
 ## Limitations
-- The extension assumes that the Java Mapper file and the XML file share the same prefix. For example, `UserMapper.java` and `UserMapper.xml`.
-- If the file prefixes do not match, the extension will not work as expected.
+- If multiple XML files contain the same statement id, the extension prefers the file whose `<mapper namespace="...">` matches the Java mapper class.
 
 ---
 
