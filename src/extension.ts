@@ -3,6 +3,32 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 
+export interface MapperXmlLocation {
+	targetLine: number;
+	startChar: number;
+}
+
+function escapeRegExp(value: string): string {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+export function findMethodIdInXml(xmlText: string, methodName: string): MapperXmlLocation | undefined {
+	const idPattern = new RegExp(`id=["']${escapeRegExp(methodName)}["']`);
+	const lines = xmlText.split(/\r?\n/);
+
+	for (let i = 0; i < lines.length; i++) {
+		if (idPattern.test(lines[i])) {
+			const startChar = lines[i].indexOf(methodName);
+			return {
+				targetLine: i,
+				startChar: startChar === -1 ? 0 : startChar,
+			};
+		}
+	}
+
+	return undefined;
+}
+
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
@@ -90,30 +116,22 @@ export function activate(context: vscode.ExtensionContext) {
 		let found = false;
 		let targetXmlUri: vscode.Uri | null = null;
 		let targetLine = -1;
+		let targetStartChar = 0;
 		let targetXmlDoc: vscode.TextDocument | null = null;
 		let xmlText: string | null = null;
-		let lines: string[] = [];
 
 		for (const xmlUri of xmlFiles) {
 			const xmlDoc = await vscode.workspace.openTextDocument(xmlUri);
 			const text = xmlDoc.getText();
-			const fileLines = text.split(/\r?\n/);
+			const location = findMethodIdInXml(text, methodName);
 
-			// Search for id="<methodName>"
-			const idPattern = new RegExp(`id=["']${methodName}["']`);
-			for (let i = 0; i < fileLines.length; i++) {
-				if (idPattern.test(fileLines[i])) {
-					found = true;
-					targetXmlUri = xmlUri;
-					targetLine = i;
-					targetXmlDoc = xmlDoc;
-					xmlText = text;
-					lines = fileLines;
-					break;
-				}
-			}
-
-			if (found) {
+			if (location) {
+				found = true;
+				targetXmlUri = xmlUri;
+				targetLine = location.targetLine;
+				targetStartChar = location.startChar;
+				targetXmlDoc = xmlDoc;
+				xmlText = text;
 				break;
 			}
 		}
@@ -125,17 +143,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 		// Open the XML file and reveal the line
 		const xmlEditor = await vscode.window.showTextDocument(targetXmlDoc, { preview: false });
-		const lineTextInXml = lines[targetLine];
-		const idMatch = lineTextInXml.match(/id=["']([^"']+)["']/);
-		let startChar = 0;
-		if (idMatch && idMatch.index !== undefined) {
-			// Find the start index of the method name (id property value)
-			const idValueIndex = lineTextInXml.indexOf(methodName);
-			if (idValueIndex !== -1) {
-				startChar = idValueIndex;
-			}
-		}
-		const range = new vscode.Range(targetLine, startChar, targetLine, startChar + methodName.length);
+		const range = new vscode.Range(targetLine, targetStartChar, targetLine, targetStartChar + methodName.length);
 		xmlEditor.selection = new vscode.Selection(range.start, range.end);
 		xmlEditor.revealRange(range, vscode.TextEditorRevealType.InCenter);
 	});
