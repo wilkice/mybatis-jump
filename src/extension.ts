@@ -3,11 +3,15 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 
-interface XmlMethodMatch {
-	uri: vscode.Uri;
-	document: vscode.TextDocument;
-	lines: string[];
+export interface MapperXmlFile {
+	path: string;
+	text: string;
+}
+
+export interface MapperXmlMatch {
+	file: MapperXmlFile;
 	line: number;
+	lines: string[];
 	namespaceRank: number;
 	directoryMatchCount: number;
 	fileNameMatchesClass: boolean;
@@ -61,6 +65,54 @@ function findMethodLine(lines: string[], methodName: string): number {
 	return lines.findIndex((line) => idPattern.test(line));
 }
 
+export function findBestMapperXmlMatch(javaFileName: string, javaText: string, methodName: string, xmlFiles: MapperXmlFile[]): MapperXmlMatch | null {
+	const className = getJavaClassName(javaFileName);
+	if (!className) {
+		return null;
+	}
+
+	const javaFileDir = path.dirname(javaFileName);
+	const packageName = getJavaPackageName(javaText);
+	const fullyQualifiedClassName = packageName ? `${packageName}.${className}` : null;
+	const matches: MapperXmlMatch[] = [];
+
+	for (const xmlFile of xmlFiles) {
+		const fileLines = xmlFile.text.split(/\r?\n/);
+		const methodLine = findMethodLine(fileLines, methodName);
+
+		if (methodLine === -1) {
+			continue;
+		}
+
+		matches.push({
+			file: xmlFile,
+			lines: fileLines,
+			line: methodLine,
+			namespaceRank: getNamespaceRank(xmlFile.text, className, fullyQualifiedClassName),
+			directoryMatchCount: getDirectoryMatchCount(path.dirname(xmlFile.path), javaFileDir),
+			fileNameMatchesClass: path.parse(xmlFile.path).name === className,
+		});
+	}
+
+	if (matches.length === 0) {
+		return null;
+	}
+
+	matches.sort((a, b) => {
+		if (a.namespaceRank !== b.namespaceRank) {
+			return a.namespaceRank - b.namespaceRank;
+		}
+
+		if (a.fileNameMatchesClass !== b.fileNameMatchesClass) {
+			return a.fileNameMatchesClass ? -1 : 1;
+		}
+
+		return b.directoryMatchCount - a.directoryMatchCount;
+	});
+
+	return matches[0];
+}
+
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
@@ -78,14 +130,7 @@ export function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 
-		// Get class name from file name
-		const className = getJavaClassName(fileName);
-		if (!className) {
-			return;
-		}
 		const javaText = document.getText();
-		const packageName = getJavaPackageName(javaText);
-		const fullyQualifiedClassName = packageName ? `${packageName}.${className}` : null;
 
 		// Get the current line text
 		const position = editor.selection.active;
@@ -109,53 +154,31 @@ export function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 
-		// Get current Java file directory path
-		const javaFileDir = path.dirname(fileName);
-
-		const matches: XmlMethodMatch[] = [];
-
+		const mapperXmlFiles: MapperXmlFile[] = [];
+		const xmlDocuments = new Map<string, vscode.TextDocument>();
 		for (const xmlUri of xmlFiles) {
 			const xmlDoc = await vscode.workspace.openTextDocument(xmlUri);
-			const text = xmlDoc.getText();
-			const fileLines = text.split(/\r?\n/);
-			const methodLine = findMethodLine(fileLines, methodName);
-
-			if (methodLine === -1) {
-				continue;
-			}
-
-			matches.push({
-				uri: xmlUri,
-				document: xmlDoc,
-				lines: fileLines,
-				line: methodLine,
-				namespaceRank: getNamespaceRank(text, className, fullyQualifiedClassName),
-				directoryMatchCount: getDirectoryMatchCount(path.dirname(xmlUri.path), javaFileDir),
-				fileNameMatchesClass: path.parse(xmlUri.path).name === className,
+			const xmlPath = xmlUri.path;
+			mapperXmlFiles.push({
+				path: xmlPath,
+				text: xmlDoc.getText(),
 			});
+			xmlDocuments.set(xmlPath, xmlDoc);
 		}
 
-		if (matches.length === 0) {
+		const targetMatch = findBestMapperXmlMatch(fileName, javaText, methodName, mapperXmlFiles);
+		if (!targetMatch) {
 			vscode.window.showWarningMessage(`No id="${methodName}" found in any XML file.`);
 			return;
 		}
 
-		matches.sort((a, b) => {
-			if (a.namespaceRank !== b.namespaceRank) {
-				return a.namespaceRank - b.namespaceRank;
-			}
-
-			if (a.fileNameMatchesClass !== b.fileNameMatchesClass) {
-				return a.fileNameMatchesClass ? -1 : 1;
-			}
-
-			return b.directoryMatchCount - a.directoryMatchCount;
-		});
-
-		const targetMatch = matches[0];
+		const targetXmlDoc = xmlDocuments.get(targetMatch.file.path);
+		if (!targetXmlDoc) {
+			return;
+		}
 
 		// Open the XML file and reveal the line
-		const xmlEditor = await vscode.window.showTextDocument(targetMatch.document, { preview: false });
+		const xmlEditor = await vscode.window.showTextDocument(targetXmlDoc, { preview: false });
 		const lineTextInXml = targetMatch.lines[targetMatch.line];
 		const idMatch = lineTextInXml.match(/id=["']([^"']+)["']/);
 		let startChar = 0;
