@@ -3,6 +3,11 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 
+export interface MapperXmlLocation {
+	targetLine: number;
+	startChar: number;
+}
+
 export interface MapperXmlFile {
 	path: string;
 	text: string;
@@ -10,8 +15,7 @@ export interface MapperXmlFile {
 
 export interface MapperXmlMatch {
 	file: MapperXmlFile;
-	line: number;
-	lines: string[];
+	location: MapperXmlLocation;
 	namespaceRank: number;
 	directoryMatchCount: number;
 	fileNameMatchesClass: boolean;
@@ -60,9 +64,25 @@ function getDirectoryMatchCount(firstDir: string, secondDir: string): number {
 	return matchCount;
 }
 
-function findMethodLine(lines: string[], methodName: string): number {
-	const idPattern = new RegExp(`\\bid\\s*=\\s*["']${methodName}["']`);
-	return lines.findIndex((line) => idPattern.test(line));
+function escapeRegExp(value: string): string {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+export function findMethodIdInXml(xmlText: string, methodName: string): MapperXmlLocation | undefined {
+	const idPattern = new RegExp(`\\bid\\s*=\\s*["']${escapeRegExp(methodName)}["']`);
+	const lines = xmlText.split(/\r?\n/);
+
+	for (let i = 0; i < lines.length; i++) {
+		if (idPattern.test(lines[i])) {
+			const startChar = lines[i].indexOf(methodName);
+			return {
+				targetLine: i,
+				startChar: startChar === -1 ? 0 : startChar,
+			};
+		}
+	}
+
+	return undefined;
 }
 
 export function findBestMapperXmlMatch(javaFileName: string, javaText: string, methodName: string, xmlFiles: MapperXmlFile[]): MapperXmlMatch | null {
@@ -77,17 +97,15 @@ export function findBestMapperXmlMatch(javaFileName: string, javaText: string, m
 	const matches: MapperXmlMatch[] = [];
 
 	for (const xmlFile of xmlFiles) {
-		const fileLines = xmlFile.text.split(/\r?\n/);
-		const methodLine = findMethodLine(fileLines, methodName);
+		const location = findMethodIdInXml(xmlFile.text, methodName);
 
-		if (methodLine === -1) {
+		if (!location) {
 			continue;
 		}
 
 		matches.push({
 			file: xmlFile,
-			lines: fileLines,
-			line: methodLine,
+			location,
 			namespaceRank: getNamespaceRank(xmlFile.text, className, fullyQualifiedClassName),
 			directoryMatchCount: getDirectoryMatchCount(path.dirname(xmlFile.path), javaFileDir),
 			fileNameMatchesClass: path.parse(xmlFile.path).name === className,
@@ -179,17 +197,12 @@ export function activate(context: vscode.ExtensionContext) {
 
 		// Open the XML file and reveal the line
 		const xmlEditor = await vscode.window.showTextDocument(targetXmlDoc, { preview: false });
-		const lineTextInXml = targetMatch.lines[targetMatch.line];
-		const idMatch = lineTextInXml.match(/id=["']([^"']+)["']/);
-		let startChar = 0;
-		if (idMatch && idMatch.index !== undefined) {
-			// Find the start index of the method name (id property value)
-			const idValueIndex = lineTextInXml.indexOf(methodName);
-			if (idValueIndex !== -1) {
-				startChar = idValueIndex;
-			}
-		}
-		const range = new vscode.Range(targetMatch.line, startChar, targetMatch.line, startChar + methodName.length);
+		const range = new vscode.Range(
+			targetMatch.location.targetLine,
+			targetMatch.location.startChar,
+			targetMatch.location.targetLine,
+			targetMatch.location.startChar + methodName.length
+		);
 		xmlEditor.selection = new vscode.Selection(range.start, range.end);
 		xmlEditor.revealRange(range, vscode.TextEditorRevealType.InCenter);
 	});
